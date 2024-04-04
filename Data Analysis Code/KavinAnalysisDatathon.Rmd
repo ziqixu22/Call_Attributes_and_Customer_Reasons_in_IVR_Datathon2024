@@ -1,0 +1,101 @@
+---
+title: "DatathonAnalysis"
+output: html_document
+date: "2024-03-23"
+---
+
+```{r}
+# Load the necessary libraries
+library(dplyr)
+library(ggplot2)
+library(readr)
+
+# Assuming your data is in a CSV file named 'dataset.csv'
+# Read your dataset
+data <- read_csv('/Users/kavinjindel2004/Downloads/cleaned_data_latest.csv')
+```
+
+```{r}
+# Calculate the floor percentage for each retailer
+floor_percentage_retailer <- data %>%
+  group_by(retailer_code) %>%
+  summarise(Floor_Percentage = mean(resolved == 0) * 100) %>%
+  ungroup()
+print(floor_percentage_retailer)
+
+# Visualization for Retailer Floor Percentage
+ggplot(floor_percentage_retailer, aes(x = retailer_code, y = Floor_Percentage)) +
+  geom_bar(stat = "identity") +
+  theme_minimal() +
+  labs(title = "Floor Percentage by Retailer", x = "Retailer Code", y = "Floor Percentage (%)") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))  # Rotate the x-axis labels for readability
+```
+
+```{r}
+# Ensure 'serial' is a factor and that the levels are ordered by the percentage
+floor_percentage_serial_high$serial <- factor(
+  floor_percentage_serial_high$serial,
+  levels = floor_percentage_serial_high$serial[order(floor_percentage_serial_high$Floor_Percentage)]
+)
+
+# Visualization for Serial Floor Percentage (Only those with >= 90%)
+ggplot(floor_percentage_serial_high, aes(x = serial, y = Floor_Percentage, fill = Floor_Percentage)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  scale_fill_gradient(low = "blue", high = "red") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7),
+    axis.text.y = element_text(size = 7),
+    legend.position = "none"
+  ) +
+  labs(title = "Floor Percentage by Serial (>= 90%)", x = "Serial", y = "Floor Percentage (%)")
+# Ensure 'serial' is a factor and that the levels are ordered by the percentage
+floor_percentage_serial_high$serial <- factor(
+  floor_percentage_serial_high$serial,
+  levels = floor_percentage_serial_high$serial[order(floor_percentage_serial_high$Floor_Percentage)]
+)
+
+# Visualization for Serial Floor Percentage (Only those with >= 90%)
+ggplot(floor_percentage_serial_high, aes(x = serial, y = Floor_Percentage, fill = Floor_Percentage)) +
+  geom_bar(stat = "identity", width = 0.7) +
+  scale_fill_gradient(low = "blue", high = "red") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5, size = 7),
+    axis.text.y = element_text(size = 7),
+    legend.position = "none"
+  ) +
+  labs(title = "Floor Percentage by Serial (>= 90%)", x = "Serial", y = "Floor Percentage (%)")
+
+```
+
+
+
+```{r}
+# Load necessary library
+library(dplyr)
+
+# Assuming your data is already read into the 'data' data frame.
+
+# Count the occurrences of each serial
+serial_counts <- data %>%
+  filter(resolved == 0) %>%
+  group_by(serial) %>%
+  summarise(Count = n()) %>%
+  arrange(desc(Count))  # Arrange in descending order of Count
+
+# View the top serials based on occurrence
+top_serials <- head(serial_counts, n = 40)  # Modify 'n' to view more or fewer top serials
+print(top_serials)
+
+# Visualization of the Top Serials by Count
+library(ggplot2)
+
+ggplot(top_serials, aes(x = reorder(serial, Count), y = Count)) +
+  geom_bar(stat = "identity", fill = "turquoise") +
+  theme_minimal() +
+  labs(title = "Top Serials by Count", x = "Serial", y = "Count") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))  # Rotate the x-axis labels for readability
+
+
+```

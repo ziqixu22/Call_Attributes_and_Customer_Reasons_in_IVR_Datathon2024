@@ -1,0 +1,117 @@
+---
+title: "Datathon_ziqi"
+author: "Ziqi"
+date: "2024-03-23"
+output: pdf_document
+---
+
+Read in the csv datasets
+```{r}
+
+# Load the conflicted package
+library(conflicted)
+conflict_prefer("filter", "dplyr")  # Use dplyr's filter function
+conflict_prefer("lag", "dplyr")     # Use dplyr's lag function
+
+# Load other required packages
+library(tidyverse)
+
+# Read the CSV files and bind them together
+data1 <- read.csv("/Users/ziqixu/Desktop/Data Set for Competition/file_3_Mar18_Output_1.csv")
+data2 <- read.csv("/Users/ziqixu/Desktop/Data Set for Competition/file_4_Mar18_Output_1.csv")
+data <- bind_rows(data1, data2)
+```
+
+make sure integer
+```{r}
+library(dplyr)
+data <- data %>%
+  mutate(auto_pay_enrolled_status_13_marchs = as.integer(auto_pay_enrolled_status_13_march))
+
+data <- data %>%
+  mutate(account_balance_13_march = as.integer(account_balance_13_march))
+
+data <- data %>%
+  mutate(no_of_accounts_with_syf_13_march = as.integer(no_of_accounts_with_syf_13_march))
+
+data <- data %>%
+  mutate(card_activation_status_13_march = as.integer(card_activation_status_13_march))
+
+```
+
+convert resolved to be 1, floor to be 0
+```{r}
+data <- data %>%
+  mutate(resolved = ifelse(resolved == "resolved", 1, 0))
+data
+```
+
+card_activation_status: check if there are numbers other than 0, 7, 8, 9, 5
+```{r}
+data <- data %>%
+  mutate(card_activation_status_13_march = ifelse(is.na(card_activation_status_13_march), 6, card_activation_status_13_march))
+
+invalid_values <- data %>%
+  filter(!(card_activation_status_13_march %in% c(0, 7, 8, 9, 6)))
+
+if (nrow(invalid_values) > 0) {
+  print("Invalid values found in 'card_activation_status_13_march' column:")
+  print(invalid_values$card_activation_status_13_march)
+} else {
+  print("No invalid values found in 'card_activation_status_13_march' column.")
+}
+```
+```{r}
+data <- data %>%
+  mutate(account_status_13_march = ifelse(is.na(account_status_13_march), N, account_status_13_march))
+
+
+data <- data %>%
+  mutate(account_status_13_march = case_when(
+    account_status_13_march %in% c('B', 'C', 'E', 'F', 'I', 'Z') ~ 'C',
+    TRUE ~ account_status_13_march
+  ))
+
+```
+
+Deal with time and date
+```{r}
+
+```
+
+
+Analyze reason
+```{r}
+
+```
+
+Analyze mos
+```{r}
+data %>% 
+  mutate(
+    mos = str_split(mos, " ")
+  )  %>% 
+  unnest(mos1) %>% 
+  count(mos1) %>%
+  ggplot(aes(x=reorder(mos1, n), y = n))+ # arrange bars in order
+  geom_col()+
+  coord_flip()+ 
+  theme(axis.text = element_text(size = 5))
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
