@@ -1,0 +1,129 @@
+---
+title: "datathon_data_cleaning"
+author: "Kaiwen Ren"
+date: "2024-03-23"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(tidyr)
+library(conflicted)
+conflict_prefer("filter", "dplyr")  # Use dplyr's filter function
+conflict_prefer("lag", "dplyr")     # Use dplyr's lag function
+```
+
+## R Markdown
+```{r}
+csv1 <- read.csv("/Users/kelsey/Downloads/file_3_Mar18_Output_1.csv")
+csv2 <- read.csv("/Users/kelsey/Downloads/file_4_Mar18_Output_1.csv")
+data <- rbind(csv1, csv2)
+head(data)
+```
+
+```{r}
+data <- data %>%
+  mutate(auto_pay_enrolled_status_13_marchs = as.integer(auto_pay_enrolled_status_13_march))
+
+data <- data %>%
+  mutate(account_balance_13_march = as.integer(account_balance_13_march))
+
+data <- data %>%
+  mutate(no_of_accounts_with_syf_13_march = as.integer(no_of_accounts_with_syf_13_march))
+
+data <- data %>%
+  mutate(card_activation_status_13_march = as.integer(card_activation_status_13_march))
+```
+convert resolved to be 1, floor to be 0
+```{r}
+data <- data %>%
+  mutate(resolved = ifelse(resolved == "resolved", 1, 0))
+data
+```
+card_activation_status: check if there are numbers other than 0, 7, 8, 9, 5
+```{r}
+data <- data %>%
+  mutate(card_activation_status_13_march = ifelse(is.na(card_activation_status_13_march), 6, card_activation_status_13_march))
+
+invalid_values <- data %>%
+  filter(!(card_activation_status_13_march %in% c(0, 7, 8, 9, 6)))
+
+if (nrow(invalid_values) > 0) {
+  print("Invalid values found in 'card_activation_status_13_march' column:")
+  print(invalid_values$card_activation_status_13_march)
+} else {
+  print("No invalid values found in 'card_activation_status_13_march' column.")
+}
+```
+```{r}
+data <- data %>%
+  mutate(account_status_13_march = ifelse(is.na(account_status_13_march), N, account_status_13_march))
+
+
+data <- data %>%
+  mutate(account_status_13_march = case_when(
+    account_status_13_march %in% c('B', 'C', 'E', 'F', 'I', 'Z') ~ 'C',
+    TRUE ~ account_status_13_march
+  ))
+
+```
+
+```{r}
+table(data$ebill_enrolled_status_13_march)
+table(data$ebill_enrolled_status_18_march)
+```
+
+```{r}
+cleaned_data <- data %>%
+  mutate(e_bill_enrolled_status_combined_13_march = case_when(
+    ebill_enrolled_status_13_march %in% c('B', 'D', 'L') ~ 'B', # Replace 'B', 'D', 'L' with 'B'
+    ebill_enrolled_status_13_march == '' ~ 'P', # Replace '' with 'P'
+    ebill_enrolled_status_13_march == ' ' ~ 'P', # Replace ' ' with 'P'
+    TRUE ~ ebill_enrolled_status_13_march # Keep 'E' and any other values as they are
+  ))
+table(cleaned_data$e_bill_enrolled_status_combined_13_march)
+```
+
+```{r}
+table(data$delinquency_history_13_march)
+```
+```{r}
+cleaned_data <- data %>%
+  mutate(delinquency_history_13_march = gsub("\\[|\\]", "", delinquency_history_13_march)) %>%
+  separate(col = delinquency_history_13_march,
+           into = c("delinquency_history_13_March_current", "delinquency_history_13_March_past"),
+           sep = 1)  # Use the position of the separator; in this case, after the second character
+cleaned_data <- cleaned_data %>%
+  mutate(
+    delinquency_history_13_March_current = as.numeric(as.character(delinquency_history_13_March_current)),
+    delinquency_history_13_March_past = as.numeric(as.character(delinquency_history_13_March_past))
+  )
+table(cleaned_data$delinquency_history_13_March_current)
+table(cleaned_data$delinquency_history_13_March_past)
+View(cleaned_data)
+View(data)
+```
+
+```{r}
+cleaned_data <- cleaned_data %>%
+  mutate(
+    # Identify bad data rows
+    bad_data = delinquency_history_13_March_current > delinquency_history_13_March_past + 1,
+    # Set current and past values to NA where bad data is identified
+    delinquency_history_13_March_current = ifelse(bad_data, NA, delinquency_history_13_March_current),
+    delinquency_history_13_March_past = ifelse(bad_data, NA, delinquency_history_13_March_past),
+    # Now create the comparison column
+    delinquency_compare_13_March = case_when(
+      !bad_data & delinquency_history_13_March_current == delinquency_history_13_March_past + 1 ~ 'M',
+      !bad_data & delinquency_history_13_March_current == 0 & delinquency_history_13_March_past == 0 ~ 'N',
+      !bad_data & delinquency_history_13_March_current == delinquency_history_13_March_past & delinquency_history_13_March_current != 0 ~ 'E',
+      !bad_data & delinquency_history_13_March_past > delinquency_history_13_March_current ~ 'P',
+      bad_data ~ ""
+    )
+  ) %>%
+  select(-bad_data) # Remove the bad_data column, it's no longer needed after this
+View(cleaned_data)
+table(cleaned_data$delinquency_compare_13_March)
+write.csv(cleaned_data, file = "/Users/kelsey/Downloads/cleaned_data.csv", row.names = FALSE)
+```
